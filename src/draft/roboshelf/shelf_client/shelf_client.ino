@@ -7,21 +7,14 @@
 */
 
 
-// Support functions
-void serial_setup()
-void radio_setup(RF24 *cl_radio, uint64_t pipe_w, uint64_t pipe_r);
-void rf24write(const void *buf, uint8_t len);
-void rf24read(void *buf,  uint8_t len);
-
-
-// Robot behaviour
-#define ROBOT_SHELF_ARRIVE 1
+// BEGIN Robot behaviour
+#define ROBOT_SHELF_ARRIVING 1
 #define ROBOT_SHELF_PARKING 2
 #define ROBOT_SHELF_GRABBING 3
 #define ROBOT_SHELF_CALLDISPENCE 4
 #define ROBOT_SHELF_LEAVING 5
 #define ROBOT_SCRAM 6
-int mode = ROBOT_SHELF_ARRIVE; // robot interaction state
+int mode = ROBOT_SCRAM; // robot interaction state
 unsigned int cell=3; // shelf cell
 uint64_t shelf_id=2; 
 
@@ -30,8 +23,15 @@ uint64_t shelf_id=2;
 #include <SPI.h>
 #include <RF24.h>
 RF24 radio(9,10);
-const uint64_t pipe_shelf[6] = "1SHLF"
-const uint64_t pipe_robot[6] = "1ROBO"
+const uint8_t pipe_shelf[6] = {'1', 'S', 'H', 'L', 'F'};
+const uint8_t pipe_robot[6] = {'1', 'R', 'O', 'B', 'O'};
+
+
+// Support functions
+void serial_setup();
+void radio_setup(RF24 *cl_radio, const uint8_t* pipe_w, const uint8_t* pipe_r);
+void rf24write(const void *buf, uint8_t len);
+void rf24read(void *buf,  uint8_t len);
 
 
 // Shelf
@@ -42,7 +42,7 @@ NetShelf shelf(shelf_id, &rf24read, &rf24write);
 void setup() 
 {
   serial_setup();
-  radio_setup(pipe_robot, pipe_shelf);
+  radio_setup(&radio, pipe_robot, pipe_shelf);
   
   shelf.begin();
   while (!shelf.available() && shelf.status()!=SHELF_ONLINE)
@@ -58,15 +58,15 @@ void setup()
     delay(2000);
   }
   Serial.print("Connected to shelf ");
-  Serial.print(shelf.getID());
+  Serial.print(shelf.readID());
   Serial.println(".");
-  mode = ROBOT_SHELF_GOTO;
+  mode = ROBOT_SHELF_ARRIVING;
 }
 
 //
 void loop() 
 {
-  bool arrived, parked;
+  bool arrived=false, parked=false;
   if (mode == ROBOT_SHELF_ARRIVING)
   // robot goes to the shelf
   {
@@ -79,7 +79,7 @@ void loop()
   else if (mode == ROBOT_SHELF_PARKING)
   // robot park near the shelf, ready to take item
   {
-    if (shelf.make_busy() == SHELF_ALLOWED)
+    if (shelf.makeBusy())
     {
       //your code here: parking to the shelf.
       if (parked)
@@ -128,12 +128,11 @@ void loop()
 
 
 
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦЙИИ
-//***********************************************\\
+// SUPPORT FUNCTIONS
 
 void serial_setup()
 {
-  Serial.begin()
+  Serial.begin(115200);
   while(!Serial)
   {
     delay(100);
@@ -141,14 +140,14 @@ void serial_setup()
 }
 
 
-void radio_setup(RF24 *cl_radio, uint64_t pipe_w, uint64_t pipe_r)
+void radio_setup(RF24 *cl_radio, uint8_t *pipe_w, uint8_t *pipe_r)
 {
-  cl_radio.begin();
-  cl_radio.openWritingPipe(pipe_w);
-  cl_radio.openReadingPipe(pipe_r);
+  cl_radio->begin();
+  cl_radio->openWritingPipe(pipe_w);
+  cl_radio->openReadingPipe(1, pipe_r);
 }
 
-void rf24write(const void *buf, uint8_t len)
+void rf24write(void *buf, uint8_t len)
 {
   radio.write(buf, len);
 }

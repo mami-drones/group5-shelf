@@ -1,11 +1,10 @@
 #include "Arduino.h"
-#include <string>
 
 
 
 class PhyShelf
 {
   public:
-    PhyShelf(string name);
-    getContents()
-}
+    PhyShelf(char* name);
+    void getContents();
+};

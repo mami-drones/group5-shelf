@@ -4,5 +4,5 @@ class PhyShelfStockItem
 {
   public:
     char [1024]
-    PhyShelfStockItem(unsigned long int stock_id, char* description);
+    PhyShelfStockItem(uint64_t stock_id, char* description);
 }
