@@ -1,0 +1,2 @@
+MpuStepper	KEYWORD1
+setSlowness	KEYWORD2
